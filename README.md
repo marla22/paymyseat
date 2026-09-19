@@ -69,4 +69,4 @@ Togliendo l'Outbox Pattern il sistema è veloce ma rischia di perdere eventi in 
    │→ AmazonMQ│            │   (Asincrono)    │    └─────────────┘
    └──────────┘            └──────────────────┘
 
----
+Ciao
