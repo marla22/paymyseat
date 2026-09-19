@@ -70,3 +70,30 @@ Togliendo l'Outbox Pattern il sistema è veloce ma rischia di perdere eventi in 
    └──────────┘            └──────────────────┘
 
    ----
+
+   ## Quick start
+
+Prerequisiti: Docker + Compose, Python 3.11+
+
+```bash
+git clone git@github.com: marla22/paymyseat.git
+cd paymyseat
+docker compose up -d --build
+
+Un comando solo. Costruisce le tre immagini dei microservizi, avvia i datastore/broker (MySQL, Redis, RabbitMQ), applica lo schema di inizializzazione SQL e collega tutti i servizi nella rete virtuale.
+
+| Interfaccia | Indirizzo | Applicazione |
+|---|---|---|
+| Payment API | http://localhost:5000/health | Healthcheck & Status |
+| RabbitMQ Management | http://localhost:15672 | Console Broker (guest / guest) |
+| MySQL Database | localhost:3306 | Database Relazionale (payuser / paypassword) |
+
+La dimostrazione centrale
+Bash
+
+cd tests
+python -m pytest -v
+
+100 richieste simultanee sullo stesso pagamento con la stessa chiave X-Idempotency-Key → 1 addebito elaborato, 99 risposte idonee intercettate dalla cache.
+
+---
