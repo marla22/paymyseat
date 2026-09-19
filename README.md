@@ -24,3 +24,20 @@
 </p>
 
 ---
+
+## Cosa fa
+
+Gestione degli addebiti, tolleranza ai retry e coerenza finanziaria per la prenotazione posti. Il punto del progetto non è il gestionale: è cosa succede quando mille persone inviano una richiesta di pagamento sullo stesso posto nello stesso istante o quando la connessione cade durante un addebito.
+
+Una transazione finanziaria è un'operazione critica: o si elabora esattamente **una sola volta**, o il sistema crea un doppio addebito. PayMySeat lo protegge con tre meccanismi sovrapposti, che non sono ridondanti — risolvono problemi diversi:
+
+| # | Meccanismo | Garantisce | Non garantisce |
+|---|---|---|---|
+| 1 | **Lock Redis** `SET NX EX` , `TTL 24h` | feedback immediato ai retry di rete | è a scadenza: non è una garanzia di persistenza eterna |
+| 2 | **Transactional Outbox** `payments` + `outbox_events` | coerenza atomica ACID fra database ed eventi | invio diretto in tempo reale al broker esterno |
+| 3 | **Firma Webhook** `HMAC-SHA256` | autenticità e integrità delle notifiche di esito | gestione dei timeout del client HTTP |
+
+Togliendo Redis il sistema resta corretto ma viene sommerso dai retry.
+Togliendo l'Outbox Pattern il sistema è veloce ma rischia di perdere eventi in caso di crash.
+
+---
