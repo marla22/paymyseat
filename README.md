@@ -41,3 +41,32 @@ Togliendo Redis il sistema resta corretto ma viene sommerso dai retry.
 Togliendo l'Outbox Pattern il sistema è veloce ma rischia di perdere eventi in caso di crash.
 
 ---
+
+## Architettura
+
+```text
+                        ┌──────────────────┐
+   Browser / Client ───►│  Ingress / ALB   │
+      ▲                 └────────┬─────────┘
+      │                          │
+      │ HTTP REST                ▼
+      │                   ┌─────────────┐
+      └───────────────────┤ Payment API │◄─────── (X-Idempotency-Key)
+                          └──────┬──────┘
+                                 │
+         ┌───────────────────────┼───────────────────────┐
+         ▼                       ▼                       ▼
+   ┌──────────┐            ┌───────────┐           ┌───────────┐
+   │ MySQL 8  │            │  Redis 7  │           │ Gateway   │
+   │ → RDS    │            │→ElastiCache│          │ Adapter   │
+   │ Payments │            │Idempotency│           │ (Provider)│
+   │ + Outbox │            └───────────┘           └─────┬─────┘
+   └────┬─────┘                                          │ Webhook
+        │ relay                                          │ (HMAC)
+        ▼                                                ▼
+   ┌──────────┐            ┌──────────────────┐    ┌─────────────┐
+   │ RabbitMQ │───────────►│  Refund Worker   │───►│ Payment API │
+   │→ AmazonMQ│            │   (Asincrono)    │    └─────────────┘
+   └──────────┘            └──────────────────┘
+
+   ----
