@@ -69,9 +69,9 @@ Togliendo l'Outbox Pattern il sistema è veloce ma rischia di perdere eventi in 
    │→ AmazonMQ│            │   (Asincrono)    │    └─────────────┘
    └──────────┘            └──────────────────┘
 
-   ----
+----
 
-   ## Quick start
+## Quick start
 
 Prerequisiti: Docker + Compose, Python 3.11+
 
