@@ -77,7 +77,7 @@ Togliendo l'Outbox Pattern il sistema è veloce ma rischia di perdere eventi in 
 Prerequisiti: Docker + Compose, Python 3.11+
 
 ```bash
-git clone git@github.com:TUO-USERNAME/paymyseat.git
+git clone git@github.com: marla22/paymyseat.git
 cd paymyseat
 docker compose up -d --build
 
@@ -95,10 +95,80 @@ Un comando solo. Costruisce le tre immagini dei microservizi, avvia i datastore/
 
 ## La dimostrazione centrale
 
+```bash
 cd tests
 python -m pytest -v
+```
 
 100 richieste simultanee sullo stesso pagamento con la stessa chiave X-Idempotency-Key → 1 addebito elaborato, 99 risposte idonee intercettate dalla cache.
 
 ---
 
+## Documentazione
+
+📄 **Relazione completa (PDF)** — Architettura, analisi delle transazioni finanziarie, gestione dell'idempotenza con Redis, pattern Transactional Outbox e procedura di riproduzione passo passo.
+
+Per ricompilarla non serve installare LaTeX locale:
+
+```bash
+cd relazione && make
+```
+
+---
+
+## Struttura
+
+```text
+services/
+  payment_api/          Flask · MySQL · Redis — API d'incasso e controllo idempotenza
+  gateway_adapter/      Flask — Mock Provider esterno di addebito (simulatore Stripe/PayPal)
+  refund_worker/        Python · RabbitMQ — Consumer asincrono per i rimborsi
+infra/
+  local/                Terraform · Ansible · manifest Kubernetes (kubeadm su VM Multipass)
+  aws/                  Terraform per AWS
+relazione/              Relazione in LaTeX
+tests/                  Suite di validazione e concorrenza
+```
+
+## Stato
+
+Fase	Contenuto	Stato
+1a	Schema DB MySQL (Payments, Outbox, Refunds) e setup Docker Compose	✅
+1b	Controllo Idempotenza su Redis e Transactional Outbox Pattern	✅
+1c	Gateway Adapter mock provider e gestione Webhook firmati HMAC	⬜
+1d	Refund Worker asincrono con RabbitMQ e gestione compensazioni	⬜
+2a	Dockerization completa — build multi-stage e stack in compose	✅
+2b	Kubernetes locale — cluster kubeadm su VM Multipass con Ingress	⬜
+3	IaC locale — provisioning con Terraform + Ansible	⬜
+4	Cloudificazione AWS (EC2, RDS MySQL, ElastiCache, Amazon MQ)	⬜
+5	CI/CD (GitHub Actions → ECR → Deploy automatico)	⬜
+
+---
+
+## Sicurezza
+
+Il progetto usa credenziali e token, quindi la difesa contro la fuga di segreti è su tre livelli:
+
+    .gitignore — *.pem, .env, *.tfstate, *.tfvars
+
+    Hook pre-commit versionato in .githooks/ — blocca chiavi AWS, chiavi PEM e credenziali hardcodate
+
+    Signature Verification HMAC-SHA256 — verifica l'integrità dei webhook provenienti dal gateway di pagamento
+
+```bash
+git config core.hooksPath .githooks    # da eseguire dopo ogni clone
+```
+---
+
+## Progetto collegato
+Il sistema di prenotazione è deliberatamente fuori da questo microservizio: è delegato ad HoldMySeat, con cui PayMySeat dialoga solo via HTTP e webhook firmati.
+
+    🔗 Progetto collegato: HoldMySeat (Eleonora Giuffrida)
+
+Corso: Sistemi Cloud (LM-18) — Università degli Studi di Catania
+
+Docenti: Prof. Giuseppe Pappalardo · Prof. Salvatore Nicotra
+
+Autrice: Valeria Platania · Licenza: MIT
+
+---
