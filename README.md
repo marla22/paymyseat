@@ -1,4 +1,4 @@
-💳 PayMySeat
+PayMySeat
 Cloud-native payment and financial idempotency microservice
 
 Progetto per il corso di Sistemi Cloud — LM-18, Università degli Studi di Catania
@@ -54,7 +54,7 @@ Database         MySQL                  Amazon RDS MySQL
 Quick start
 Prerequisiti: Docker + Compose, Python 3.11+
 
-git clone git@github.com:TUO-USERNAME/paymyseat.git
+
 cd paymyseat
 docker compose up -d --build
 
