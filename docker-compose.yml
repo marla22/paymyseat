@@ -46,5 +46,25 @@ services:
       timeout: 5s
       retries: 5
 
+  payment-api:
+    build: ./services/payment_api
+    container_name: paymyseat-payment-api
+    ports:
+      - "5000:5000"
+    environment:
+      MYSQL_HOST: mysql
+      MYSQL_USER: payuser
+      MYSQL_PASSWORD: paypassword
+      MYSQL_DB: paymyseat_db
+      REDIS_HOST: redis
+      RABBITMQ_HOST: rabbitmq
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+
 volumes:
   mysql_data:
