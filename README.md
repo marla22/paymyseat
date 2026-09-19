@@ -68,3 +68,5 @@ Togliendo l'Outbox Pattern il sistema è veloce ma rischia di perdere eventi in 
    │ RabbitMQ │───────────►│  Refund Worker   │───►│ Payment API │
    │→ AmazonMQ│            │   (Asincrono)    │    └─────────────┘
    └──────────┘            └──────────────────┘
+
+---
