@@ -132,16 +132,19 @@ tests/                  Suite di validazione e concorrenza
 
 ## Stato
 
-Fase	Contenuto	Stato
-1a	Schema DB MySQL (Payments, Outbox, Refunds) e setup Docker Compose	✅
-1b	Controllo Idempotenza su Redis e Transactional Outbox Pattern	✅
-1c	Gateway Adapter mock provider e gestione Webhook firmati HMAC	⬜
-1d	Refund Worker asincrono con RabbitMQ e gestione compensazioni	⬜
-2a	Dockerization completa — build multi-stage e stack in compose	✅
-2b	Kubernetes locale — cluster kubeadm su VM Multipass con Ingress	⬜
-3	IaC locale — provisioning con Terraform + Ansible	⬜
-4	Cloudificazione AWS (EC2, RDS MySQL, ElastiCache, Amazon MQ)	⬜
-5	CI/CD (GitHub Actions → ECR → Deploy automatico)	⬜
+## Stato
+
+| Fase | Contenuto | Stato |
+|---|---|:---:|
+| **1a** | Schema DB MySQL (Payments, Outbox, Refunds) e setup Docker Compose | ✅ |
+| **1b** | Controllo Idempotenza su Redis e Transactional Outbox Pattern | ✅ |
+| **1c** | Gateway Adapter mock provider e gestione Webhook firmati HMAC | ⬜ |
+| **1d** | Refund Worker asincrono con RabbitMQ e gestione compensazioni | ⬜ |
+| **2a** | Dockerization completa — build multi-stage e stack in compose | ✅ |
+| **2b** | Kubernetes locale — cluster kubeadm su VM Multipass con Ingress | ⬜ |
+| **3** | IaC locale — provisioning con Terraform + Ansible | ⬜ |
+| **4** | Cloudificazione AWS (EC2, RDS MySQL, ElastiCache, Amazon MQ) | ⬜ |
+| **5** | CI/CD (GitHub Actions → ECR → Deploy automatico) | ⬜ |
 
 ---
 
