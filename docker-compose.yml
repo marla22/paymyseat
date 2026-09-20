@@ -66,5 +66,17 @@ services:
       rabbitmq:
         condition: service_healthy
 
+gateway_adapter:
+    build:
+      context: ./services/gateway_adapter
+    container_name: paymyseat_gateway_adapter
+    ports:
+      - "5001:5001"
+    environment:
+      - WEBHOOK_SECRET=super_secret_hmac_key_2026
+      - PAYMENT_API_WEBHOOK_URL=http://payment_api:5000/api/v1/payments/webhook
+    networks:
+      - paymyseat_net
+
 volumes:
   mysql_data:
