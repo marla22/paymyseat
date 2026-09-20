@@ -1,72 +1,23 @@
-version: '3.8'
-
 services:
-  mysql:
-    image: mysql:8.0
-    container_name: paymyseat-mysql
-    environment:
-      MYSQL_ROOT_PASSWORD: rootpassword
-      MYSQL_DATABASE: paymyseat_db
-      MYSQL_USER: payuser
-      MYSQL_PASSWORD: paypassword
-    ports:
-      - "3306:3306"
-    volumes:
-      - mysql_data:/var/lib/mysql
-      - ./init-db.sql:/docker-entrypoint-initdb.d/init.sql
-    healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
-      interval: 5s
-      timeout: 5s
-      retries: 5
-
-  redis:
-    image: redis:7-alpine
-    container_name: paymyseat-redis
-    ports:
-      - "6379:6379"
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 5s
-      timeout: 5s
-      retries: 5
-
-  rabbitmq:
-    image: rabbitmq:3-management-alpine
-    container_name: paymyseat-rabbitmq
-    environment:
-      RABBITMQ_DEFAULT_USER: guest
-      RABBITMQ_DEFAULT_PASS: guest
-    ports:
-      - "5672:5672"
-      - "15672:15672"
-    healthcheck:
-      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
-      interval: 5s
-      timeout: 5s
-      retries: 5
-
-  payment-api:
-    build: ./services/payment_api
-    container_name: paymyseat-payment-api
+  payment_api:
+    build:
+      context: ./services/payment_api
+    container_name: paymyseat_payment_api
     ports:
       - "5000:5000"
     environment:
-      MYSQL_HOST: mysql
-      MYSQL_USER: payuser
-      MYSQL_PASSWORD: paypassword
-      MYSQL_DB: paymyseat_db
-      REDIS_HOST: redis
-      RABBITMQ_HOST: rabbitmq
+      - MYSQL_HOST=mysql
+      - REDIS_HOST=redis
+      - RABBITMQ_HOST=rabbitmq
+      - WEBHOOK_SECRET=super_secret_hmac_key_2026
     depends_on:
-      mysql:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-      rabbitmq:
-        condition: service_healthy
+      - mysql
+      - redis
+      - rabbitmq
+    networks:
+      - paymyseat_net
 
-gateway_adapter:
+  gateway_adapter:
     build:
       context: ./services/gateway_adapter
     container_name: paymyseat_gateway_adapter
@@ -78,5 +29,49 @@ gateway_adapter:
     networks:
       - paymyseat_net
 
-volumes:
-  mysql_data:
+  refund_worker:
+    build:
+      context: ./services/refund_worker
+    container_name: paymyseat_refund_worker
+    environment:
+      - RABBITMQ_HOST=rabbitmq
+      - GATEWAY_URL=http://gateway_adapter:5001/api/v1/charge
+    depends_on:
+      - rabbitmq
+      - gateway_adapter
+    networks:
+      - paymyseat_net
+
+  mysql:
+    image: mysql:8.0
+    container_name: paymyseat_mysql
+    ports:
+      - "3306:3306"
+    environment:
+      - MYSQL_ROOT_PASSWORD=rootpassword
+      - MYSQL_DATABASE=paymyseat_db
+      - MYSQL_USER=payuser
+      - MYSQL_PASSWORD=paypassword
+    networks:
+      - paymyseat_net
+
+  redis:
+    image: redis:7-alpine
+    container_name: paymyseat_redis
+    ports:
+      - "6379:6379"
+    networks:
+      - paymyseat_net
+
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: paymyseat_rabbitmq
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    networks:
+      - paymyseat_net
+
+networks:
+  paymyseat_net:
+    driver: bridge
