@@ -1,0 +1,29 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: paymyseat
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: paymyseat-config
+  namespace: paymyseat
+data:
+  MYSQL_HOST: "mysql"
+  REDIS_HOST: "redis"
+  RABBITMQ_HOST: "rabbitmq"
+  PAYMENT_API_WEBHOOK_URL: "http://payment-api:5000/api/v1/payments/webhook"
+  GATEWAY_URL: "http://gateway-adapter:5001/api/v1/charge"
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: paymyseat-secrets
+  namespace: paymyseat
+type: Opaque
+stringData:
+  MYSQL_ROOT_PASSWORD: "rootpassword"
+  MYSQL_DATABASE: "paymyseat_db"
+  MYSQL_USER: "payuser"
+  MYSQL_PASSWORD: "paypassword"
+  WEBHOOK_SECRET: "super_secret_hmac_key_2026"

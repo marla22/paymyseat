@@ -1,0 +1,24 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: refund-worker
+  namespace: paymyseat
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: refund-worker
+  template:
+    metadata:
+      labels:
+        app: refund-worker
+    spec:
+      containers:
+        - name: refund-worker
+          image: refund_worker:latest
+          imagePullPolicy: Never
+          envFrom:
+            - configMapRef:
+                name: paymyseat-config
+            - secretRef:
+                name: paymyseat-secrets

@@ -1,0 +1,60 @@
+---
+- name: Setup e Deployment dell'Infrastruttura PayMySeat su EC2
+  hosts: app_servers
+  become: true
+
+  tasks:
+    - name: Aggiorna la cache dei pacchetti apt
+      apt:
+        update_cache: yes
+        cache_valid_time: 3600
+
+    - name: Installa i pacchetti prerequisiti
+      apt:
+        name:
+          - apt-transport-https
+          - ca-certificates
+          - curl
+          - gnupg
+          - lsb-release
+          - git
+        state: present
+
+    - name: Aggiungi la chiave GPG ufficiale di Docker
+      apt_key:
+        url: https://download.docker.com/linux/ubuntu/gpg
+        state: present
+
+    - name: Aggiungi il repository di Docker
+      apt_repository:
+        repo: "deb [arch=amd64] https://download.docker.com/linux/ubuntu {{ ansible_distribution_release }} stable"
+        state: present
+
+    - name: Installa Docker Engine e Docker Compose Plugin
+      apt:
+        name:
+          - docker-ce
+          - docker-ce-cli
+          - containerd.io
+          - docker-compose-plugin
+        state: present
+
+    - name: Assicura che il servizio Docker sia attivo e abilitato
+      systemd:
+        name: docker
+        state: started
+        enabled: yes
+
+    - name: Aggiungi l'utente ubuntu al gruppo docker
+      user:
+        name: ubuntu
+        groups: docker
+        append: yes
+
+    - name: Crea la directory per il progetto
+      file:
+        path: /home/ubuntu/paymyseat
+        state: directory
+        owner: ubuntu
+        group: ubuntu
+        mode: '0755'
