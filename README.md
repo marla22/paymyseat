@@ -100,7 +100,7 @@ Un comando solo. Costruisce le tre immagini dei microservizi, avvia i datastore/
 Per verificare il funzionamento del microservizio e dello stato di salute dei container:
 
 # Test dell'endpoint di Healthcheck (PowerShell)
-Invoke-RestMethod -Uri "http://localhost:5000/health
+Invoke-RestMethod -Uri "http://localhost:5000/health"
 
 Oppure per verificare l'esecuzione dei test d'integrazione dentro il container:
 
