@@ -1,63 +1,28 @@
+version: '3.8'
+
 services:
-  payment_api:
-    build:
-      context: ./services/payment_api
-    container_name: paymyseat_payment_api
-    ports:
-      - "5000:5000"
-    environment:
-      - MYSQL_HOST=mysql
-      - REDIS_HOST=redis
-      - RABBITMQ_HOST=rabbitmq
-      - WEBHOOK_SECRET=super_secret_hmac_key_2026
-    depends_on:
-      - mysql
-      - redis
-      - rabbitmq
-    networks:
-      - paymyseat_net
-
-  gateway_adapter:
-    build:
-      context: ./services/gateway_adapter
-    container_name: paymyseat_gateway_adapter
-    ports:
-      - "5001:5001"
-    environment:
-      - WEBHOOK_SECRET=super_secret_hmac_key_2026
-      - PAYMENT_API_WEBHOOK_URL=http://payment_api:5000/api/v1/payments/webhook
-    networks:
-      - paymyseat_net
-
-  refund_worker:
-    build:
-      context: ./services/refund_worker
-    container_name: paymyseat_refund_worker
-    environment:
-      - RABBITMQ_HOST=rabbitmq
-      - GATEWAY_URL=http://gateway_adapter:5001/api/v1/charge
-    depends_on:
-      - rabbitmq
-      - gateway_adapter
-    networks:
-      - paymyseat_net
-
   mysql:
     image: mysql:8.0
     container_name: paymyseat_mysql
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpassword
+      MYSQL_DATABASE: paymyseat_db
+      MYSQL_USER: payuser
+      MYSQL_PASSWORD: paypassword
     ports:
       - "3306:3306"
-    environment:
-      - MYSQL_ROOT_PASSWORD=rootpassword
-      - MYSQL_DATABASE=paymyseat_db
-      - MYSQL_USER=payuser
-      - MYSQL_PASSWORD=paypassword
     networks:
       - paymyseat_net
+    volumes:
+      - mysql_data_fresh:/var/lib/mysql
+      # PERCORSO CORRETTO in base all'immagine: punta al file init-db.sql nella root
+      - ./init-db.sql:/docker-entrypoint-initdb.d/init.sql
 
   redis:
     image: redis:7-alpine
     container_name: paymyseat_redis
+    restart: always
     ports:
       - "6379:6379"
     networks:
@@ -66,12 +31,46 @@ services:
   rabbitmq:
     image: rabbitmq:3-management
     container_name: paymyseat_rabbitmq
+    restart: always
     ports:
       - "5672:5672"
       - "15672:15672"
     networks:
       - paymyseat_net
 
+  payment_api:
+    build: ./services/payment_api
+    container_name: paymyseat_payment_api
+    restart: always
+    ports:
+      - "5000:5000"
+    environment:
+      MYSQL_HOST: mysql
+      MYSQL_USER: payuser
+      MYSQL_PASSWORD: paypassword
+      MYSQL_DB: paymyseat_db
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+    networks:
+      - paymyseat_net
+    depends_on:
+      - mysql
+      - redis
+
+  gateway_adapter:
+    build: ./services/gateway_adapter
+    container_name: paymyseat_gateway_adapter
+    restart: always
+    ports:
+      - "5002:5002"
+    environment:
+      WEBHOOK_SECRET: paymyseat_shared_secret_key
+    networks:
+      - paymyseat_net
+
 networks:
   paymyseat_net:
     driver: bridge
+
+volumes:
+  mysql_data_fresh:

@@ -1,35 +1,45 @@
 import os
 import json
 import uuid
+import time
 import pymysql
 import redis
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 
 app = Flask(__name__)
-CORS(app)  # Abilita CORS per l'integrazione con il Frontend React e HoldMySeat
+CORS(app)  # Abilita CORS per l'integrazione con React e HoldMySeat
 
-# Configurazioni da ambiente
-MYSQL_HOST = os.getenv("MYSQL_HOST", "localhost")
+# Configurazioni ambiente
+MYSQL_HOST = os.getenv("MYSQL_HOST", "mysql")
 MYSQL_USER = os.getenv("MYSQL_USER", "payuser")
 MYSQL_PASSWORD = os.getenv("MYSQL_PASSWORD", "paypassword")
 MYSQL_DB = os.getenv("MYSQL_DB", "paymyseat_db")
 
-REDIS_HOST = os.getenv("REDIS_HOST", "localhost")
+REDIS_HOST = os.getenv("REDIS_HOST", "redis")
 REDIS_PORT = int(os.getenv("REDIS_PORT", 6379))
 
 # Connessione Redis
 redis_client = redis.Redis(host=REDIS_HOST, port=REDIS_PORT, db=0, decode_responses=True)
 
-def get_db_connection():
-    return pymysql.connect(
-        host=MYSQL_HOST,
-        user=MYSQL_USER,
-        password=MYSQL_PASSWORD,
-        database=MYSQL_DB,
-        cursorclass=pymysql.cursors.DictCursor,
-        autocommit=False
-    )
+# Gestione Connessione DB con Retry Automatico
+def get_db_connection(retries=10, delay=2):
+    for i in range(retries):
+        try:
+            conn = pymysql.connect(
+                host=MYSQL_HOST,
+                user=MYSQL_USER,
+                password=MYSQL_PASSWORD,
+                database=MYSQL_DB,
+                cursorclass=pymysql.cursors.DictCursor,
+                autocommit=False
+            )
+            return conn
+        except pymysql.err.OperationalError as e:
+            if i == retries - 1:
+                raise e
+            print(f"[Payment API] MySQL non ancora pronto, riprovo tra {delay}s... (tentativo {i+1}/{retries})")
+            time.sleep(delay)
 
 @app.route('/health', methods=['GET'])
 def healthcheck():
@@ -58,7 +68,6 @@ def create_payment():
     redis_lock_key = f"idempotency:{idempotency_key}"
     cached_response = redis_client.get(redis_lock_key)
     if cached_response:
-        # Ritorna la risposta precedentemente salvata
         return jsonify(json.loads(cached_response)), 200
 
     payment_id = str(uuid.uuid4())
@@ -66,8 +75,8 @@ def create_payment():
     # FIX 4: Nome evento conforme (payment.succeeded / payment.failed)
     event_type = "payment.succeeded"
 
-    conn = get_db_connection()
     try:
+        conn = get_db_connection()
         with conn.cursor() as cursor:
             # Salva il pagamento nel DB MySQL
             cursor.execute("""
@@ -91,11 +100,9 @@ def create_payment():
             """, (event_type, json.dumps(outbox_payload), 'PENDING'))
 
         conn.commit()
-    except Exception as e:
-        conn.rollback()
-        return jsonify({"error": f"Database error: {str(e)}"}), 500
-    finally:
         conn.close()
+    except Exception as e:
+        return jsonify({"error": f"Database error: {str(e)}"}), 500
 
     response_data = {
         "payment_id": payment_id,
@@ -116,8 +123,8 @@ def create_payment():
 def get_payments():
     booking_id = request.args.get('booking_id')
     
-    conn = get_db_connection()
     try:
+        conn = get_db_connection()
         with conn.cursor() as cursor:
             if booking_id:
                 cursor.execute("""
@@ -138,11 +145,10 @@ def get_payments():
                 if 'created_at' in p and p['created_at']:
                     p['created_at'] = p['created_at'].isoformat()
                     
+        conn.close()
         return jsonify({"payments": payments}), 200
     except Exception as e:
         return jsonify({"error": f"Database error: {str(e)}"}), 500
-    finally:
-        conn.close()
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)
