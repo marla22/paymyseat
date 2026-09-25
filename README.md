@@ -287,7 +287,7 @@ PayMySeat/
 
 PayMySeat gestisce esclusivamente il dominio dei **pagamenti e rimborsi**. La gestione delle prenotazioni e dei posti a sedere è delegata al microservizio partner:
 
-> 🔗 **[HoldMySeat](https://github.com/x-Lele-x/HoldMySeat)** — Sistema di prenotazione posti (Eleonora Giuffrida)
+> 🔗 **[HoldMySeat](https://github.com/x-Lele-x/HoldMySeat)** — Sistema di prenotazione posti (@x-Lele-x)
 
 I due sistemi comunicano tramite:
 - **HTTP REST** — HoldMySeat invia richieste di pagamento a PayMySeat
