@@ -100,7 +100,7 @@ def create_payment():
                 "payment_id": payment_id,
                 "booking_id": booking_id,
                 "amount_cents": amount_cents,
-                "status": "PAID",
+                "status": payment_status,
                 "callback_url": callback_url,
                 "event_type": event_type
             }
@@ -121,7 +121,7 @@ def create_payment():
         "payment_id": payment_id,
         "booking_id": booking_id,
         "amount_cents": amount_cents,
-        "status": "PAID",
+        "status": payment_status,
         "event_type": event_type
     }
 
