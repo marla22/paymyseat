@@ -231,10 +231,19 @@ terraform output instance_public_ip
 ```
 
 ### 3. Configurazione e Avvio (Ansible)
-Una volta accesa l'istanza, usa Ansible per installare Docker, clonare il codice (incluso il `.env`) e avviare l'ecosistema:
+Una volta accesa l'istanza, devi configurare la chiave SSH generata da Terraform e lanciare Ansible per installare Docker, clonare il codice e avviare l'ecosistema. 
+
+Prima di tutto, prepara la chiave di sicurezza (da eseguire su terminale Linux/WSL):
 ```bash
-cd ../ansible
-ansible-playbook -i inventory playbook.yml
+# Ritorna nella cartella root del progetto
+cd ../../../
+cp infra/cloud/terraform/paymyseat_key.pem ~/.ssh/paymyseat_key.pem
+chmod 400 ~/.ssh/paymyseat_key.pem
+```
+
+Infine, lancia il deploy (sostituendo `INSERISCI_IP_QUI` con l'IP pubblico ottenuto al Passo 2):
+```bash
+ansible-playbook -i "INSERISCI_IP_QUI," -u ubuntu --private-key ~/.ssh/paymyseat_key.pem infra/cloud/ansible/playbook.yml
 ```
 
 L'intero sistema PayMySeat è ora online all'indirizzo IP pubblico generato al Passo 2.
