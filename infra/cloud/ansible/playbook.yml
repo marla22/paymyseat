@@ -1,6 +1,6 @@
 ---
 - name: Setup e Deployment dell'Infrastruttura PayMySeat su EC2
-  hosts: app_servers
+  hosts: all
   become: true
 
   tasks:
@@ -58,3 +58,37 @@
         owner: ubuntu
         group: ubuntu
         mode: '0755'
+
+    - name: Copia l'intero progetto PayMySeat sulla macchina remota
+      delegate_to: localhost
+      ansible.builtin.command:
+        cmd: "rsync -a --exclude='.git' --exclude='node_modules' --exclude='.terraform' --exclude='*.tfstate*' --exclude='*.pem' --exclude='__pycache__' -e 'ssh -i ~/.ssh/paymyseat_key.pem -o StrictHostKeyChecking=no' '{{ playbook_dir }}/../../../' ubuntu@{{ inventory_hostname }}:/home/ubuntu/paymyseat/"
+      become: false
+
+    - name: Crea file di swap da 2GB per evitare blocchi della RAM (t3.micro ha solo 1GB)
+      ansible.builtin.shell: |
+        fallocate -l 2G /swapfile
+        chmod 600 /swapfile
+        mkswap /swapfile
+        swapon /swapfile
+      args:
+        creates: /swapfile
+      become: true
+
+    - name: Imposta i permessi corretti sul progetto
+      file:
+        path: /home/ubuntu/paymyseat
+        owner: ubuntu
+        group: ubuntu
+        recurse: yes
+
+    - name: Avvia lo stack applicativo con Docker Compose
+      ansible.builtin.command:
+        cmd: docker compose up --build -d
+        chdir: /home/ubuntu/paymyseat
+      become: true
+      register: compose_output
+
+    - name: Mostra lo stato dei container avviati
+      debug:
+        var: compose_output

@@ -3,10 +3,13 @@ import json
 import time
 import pika
 import requests
+from pymongo import MongoClient
 
 RABBITMQ_HOST = os.getenv("RABBITMQ_HOST", "rabbitmq")
 QUEUE_NAME = "refund_queue"
-GATEWAY_URL = os.getenv("GATEWAY_URL", "http://gateway_adapter:5001/api/v1/charge")
+# GATEWAY_URL defaults to the environment variable set in docker-compose.yml
+GATEWAY_URL = os.getenv("GATEWAY_URL", "http://gateway_adapter:5002/api/gateway/charge")
+MONGO_HOST = os.getenv("MONGO_HOST", "mongodb")
 
 def process_refund(ch, method, properties, body):
     try:
@@ -26,6 +29,20 @@ def process_refund(ch, method, properties, body):
         
         if response.status_code == 200:
             print(f"[RefundWorker] Rimborso completato con successo per {payment_id}")
+            # Salva in MongoDB per audit
+            try:
+                mongo_client = MongoClient(host=MONGO_HOST, port=27017, serverSelectionTimeoutMS=2000)
+                db_mongo = mongo_client["paymyseat_audit"]
+                refunds_col = db_mongo["refunds"]
+                refunds_col.insert_one({
+                    "payment_id": payment_id,
+                    "amount": amount,
+                    "status": "COMPLETED",
+                    "timestamp": time.time()
+                })
+            except Exception as e:
+                print(f"[RefundWorker] Errore salvataggio audit MongoDB: {e}")
+                
             ch.basic_ack(delivery_tag=method.delivery_tag)
         else:
             print(f"[RefundWorker] Errore dal gateway per {payment_id}: {response.text}")

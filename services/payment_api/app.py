@@ -64,11 +64,20 @@ def create_payment():
     # FIX 3: callback_url dinamico fornito nel payload da HoldMySeat
     callback_url = data.get('callback_url', 'http://localhost:5001/api/webhooks/payment')
 
-    # Controlla idempotenza su Redis
+    # Controlla idempotenza su Redis con Lock Atomico (risolve race conditions)
     redis_lock_key = f"idempotency:{idempotency_key}"
+    
+    # Prima proviamo a leggere se c'è una risposta JSON già completata
     cached_response = redis_client.get(redis_lock_key)
-    if cached_response:
+    if cached_response and cached_response != "PENDING":
         return jsonify(json.loads(cached_response)), 200
+        
+    # Tenta di acquisire il lock atomico per l'elaborazione esclusiva (SET NX)
+    lock_acquired = redis_client.set(redis_lock_key, "PENDING", nx=True, ex=86400)
+    
+    if not lock_acquired:
+        # Un'altra richiesta con la stessa chiave è attualmente in esecuzione ("PENDING")
+        return jsonify({"error": "Payment already processing for this idempotency key"}), 409
 
     payment_id = str(uuid.uuid4())
     
@@ -102,6 +111,8 @@ def create_payment():
         conn.commit()
         conn.close()
     except Exception as e:
+        import traceback
+        traceback.print_exc()
         return jsonify({"error": f"Database error: {str(e)}"}), 500
 
     response_data = {
@@ -147,6 +158,46 @@ def get_payments():
                     
         conn.close()
         return jsonify({"payments": payments}), 200
+    except Exception as e:
+        return jsonify({"error": f"Database error: {str(e)}"}), 500
+
+@app.route('/api/payments/<payment_id>/refund', methods=['POST'])
+def request_refund(payment_id):
+    try:
+        conn = get_db_connection()
+        with conn.cursor() as cursor:
+            # Verifica se il pagamento esiste ed è completato
+            cursor.execute("SELECT amount_cents, booking_id, status FROM payments WHERE id = %s", (payment_id,))
+            payment = cursor.fetchone()
+            
+            if not payment:
+                return jsonify({"error": "Payment not found"}), 404
+            
+            if payment['status'] != 'COMPLETED' and payment['status'] != 'PAID':
+                return jsonify({"error": f"Cannot refund payment in status {payment['status']}"}), 400
+
+            # Aggiorna lo stato in REFUND_REQUESTED
+            cursor.execute("UPDATE payments SET status = 'REFUND_REQUESTED' WHERE id = %s", (payment_id,))
+            
+            # Inserisci evento nella outbox
+            outbox_payload = {
+                "payment_id": payment_id,
+                "booking_id": payment['booking_id'],
+                "amount": payment['amount_cents'] # Usato dal refund worker come 'amount'
+            }
+            
+            cursor.execute("""
+                INSERT INTO outbox_events (event_type, payload, status)
+                VALUES (%s, %s, %s)
+            """, ('refund.requested', json.dumps(outbox_payload), 'PENDING'))
+            
+        conn.commit()
+        conn.close()
+        
+        # Invalida la cache Redis per evitare inconsistenza
+        redis_client.delete(f"idempotency:*") # In un caso reale si salverebbe l'idempotency key insieme al payment
+        
+        return jsonify({"status": "REFUND_REQUESTED", "payment_id": payment_id}), 202
     except Exception as e:
         return jsonify({"error": f"Database error: {str(e)}"}), 500
 

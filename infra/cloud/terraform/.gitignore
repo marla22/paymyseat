@@ -2,3 +2,6 @@
 .terraform/
 *.tfstate
 *.tfstate.*
+*.pem
+*.tfvars
+inventory.ini

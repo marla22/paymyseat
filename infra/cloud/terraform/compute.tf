@@ -12,7 +12,7 @@ resource "aws_key_pair" "generated_key" {
 # Salva la chiave privata locale per consentire ad Ansible di connettersi
 resource "local_file" "private_key" {
   content         = tls_private_key.ssh_key.private_key_pem
-  filename        = "${path.module}/../ansible/paymyseat_key.pem"
+  filename        = "${path.module}/paymyseat_key.pem"
   file_permission = "0600"
 }
 
@@ -40,5 +40,10 @@ resource "aws_instance" "app_server" {
 
   tags = {
     Name = "paymyseat-app-server"
+  }
+
+  root_block_device {
+    volume_size = 20
+    volume_type = "gp2"
   }
 }

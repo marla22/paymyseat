@@ -13,6 +13,10 @@ env/
 Thumbs.db
 .vscode/
 .idea/
+
+# Terraform / IaC
 .terraform/
 *.tfstate
 *.tfstate.*
+*.pem
+*.tfvars

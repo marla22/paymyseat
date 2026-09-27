@@ -148,6 +148,7 @@ Il Gateway Adapter firma ogni notifica webhook con `HMAC-SHA256` usando un segre
 ```bash
 git clone https://github.com/marla22/paymyseat.git
 cd paymyseat
+echo "PAYMYSEAT_WEBHOOK_SECRET=paymyseat_shared_secret_key" > .env
 docker compose up -d --build
 ```
 
@@ -158,7 +159,7 @@ Un singolo comando costruisce le immagini dei microservizi, avvia tutti i datast
 | Interfaccia | URL | Credenziali |
 |-------------|-----|-------------|
 | Payment API (Health) | http://localhost:5000/health | — |
-| Frontend React | http://localhost:5173 | — |
+| Frontend React | http://localhost | — |
 | RabbitMQ Management | http://localhost:15672 | `guest` / `guest` |
 | MySQL | `localhost:3306` | `valeria` / `password` |
 
