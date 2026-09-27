@@ -62,30 +62,43 @@ export default function Checkout() {
     }
   };
 
-  // --- SCHERMATA DI SUCCESSO ---
+  // --- SCHERMATA DI ESITO PAGAMENTO ---
   if (status === 'success' && paymentResult) {
+    const isFailed = paymentResult.status === 'FAILED';
+    const bgColor = isFailed ? 'bg-red-600/30' : 'bg-emerald-600/30';
+    const titleColor = isFailed ? 'from-red-400 to-orange-400' : 'from-emerald-400 to-cyan-400';
+    const titleText = isFailed ? 'Pagamento Rifiutato' : 'Pagamento Confermato';
+    const descText = isFailed ? 'La tua carta è stata declinata dalla banca.' : 'Transazione crittografata e completata con successo.';
+    const badgeColor = isFailed ? 'text-red-400 bg-red-400/10' : 'text-emerald-400 bg-emerald-400/10';
+
     return (
       <div className="relative min-h-screen bg-gray-950 flex flex-col justify-center py-12 sm:px-6 lg:px-8 overflow-hidden text-white">
         {/* Sfondi Neon Sfocati */}
-        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-emerald-600/30 rounded-full filter blur-[128px] opacity-70"></div>
+        <div className={`absolute top-1/4 left-1/4 w-96 h-96 ${bgColor} rounded-full filter blur-[128px] opacity-70`}></div>
         <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-blue-600/20 rounded-full filter blur-[128px] opacity-70"></div>
 
         <div className="sm:mx-auto sm:w-full sm:max-w-md relative z-10">
           <div className="bg-white/10 backdrop-blur-xl py-10 px-6 shadow-2xl sm:rounded-3xl sm:px-10 border border-white/20 text-center">
-            <div className="mx-auto flex items-center justify-center h-20 w-20 rounded-full bg-emerald-500/20 border border-emerald-500/50 mb-6 shadow-[0_0_30px_rgba(16,185,129,0.3)]">
-              <svg className="h-10 w-10 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
-              </svg>
+            <div className={`mx-auto flex items-center justify-center h-20 w-20 rounded-full ${isFailed ? 'bg-red-500/20 border border-red-500/50 shadow-[0_0_30px_rgba(239,68,68,0.3)]' : 'bg-emerald-500/20 border border-emerald-500/50 shadow-[0_0_30px_rgba(16,185,129,0.3)]'} mb-6`}>
+              {isFailed ? (
+                <svg className="h-10 w-10 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              ) : (
+                <svg className="h-10 w-10 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
+                </svg>
+              )}
             </div>
-            <h2 className="text-3xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-cyan-400 mb-2">
-              Pagamento Confermato
+            <h2 className={`text-3xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r ${titleColor} mb-2`}>
+              {titleText}
             </h2>
-            <p className="text-gray-400 mb-8 text-sm">Transazione crittografata e completata con successo.</p>
+            <p className="text-gray-400 mb-8 text-sm">{descText}</p>
             
             <div className="bg-black/40 rounded-2xl p-5 text-left border border-white/10 mb-8 space-y-4 shadow-inner">
               <div className="flex justify-between items-center">
                 <span className="text-gray-400 text-sm">Stato</span>
-                <span className="font-bold text-emerald-400 bg-emerald-400/10 px-3 py-1 rounded-full text-xs tracking-wider">{paymentResult.status}</span>
+                <span className={`font-bold ${badgeColor} px-3 py-1 rounded-full text-xs tracking-wider`}>{paymentResult.status}</span>
               </div>
               <div className="flex justify-between items-center">
                 <span className="text-gray-400 text-sm">Booking ID</span>
