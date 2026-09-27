@@ -1,12 +1,25 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 
 export default function Checkout() {
+  const [searchParams] = useSearchParams();
   const [status, setStatus] = useState('idle'); // idle, loading, success, error
   const [paymentResult, setPaymentResult] = useState(null);
 
-  const [cardName, setCardName] = useState('');
+  // Parse Query Params
+  const booking_id = searchParams.get('booking_id') || "BK-" + Math.floor(Math.random() * 10000);
+  const amount_cents = parseInt(searchParams.get('amount_cents')) || 2500;
+  const event_name = searchParams.get('event_name') || "Concerto Sinfonico";
+  const venue = searchParams.get('venue') || "Colonne Sonore Studio Ghibli";
+  const seats = searchParams.get('seats') || "F12, F13";
+  const email_param = searchParams.get('email') || "";
+  const callback_url = searchParams.get('callback_url') || "http://localhost:5001/webhook";
+  const return_url = searchParams.get('return_url') || "";
+
+  const amount_eur = (amount_cents / 100).toFixed(2);
+
+  const [cardName, setCardName] = useState(email_param);
   const [cardNumber, setCardNumber] = useState('');
   const [expiry, setExpiry] = useState('');
   const [cvc, setCvc] = useState('');
@@ -21,9 +34,9 @@ export default function Checkout() {
     
     try {
       const response = await axios.post(`http://${window.location.hostname}:5000/api/payments`, {
-        booking_id: "BK-" + Math.floor(Math.random() * 10000),
-        amount_cents: 2500,
-        callback_url: "http://localhost:5001/webhook" 
+        booking_id: booking_id,
+        amount_cents: amount_cents,
+        callback_url: callback_url 
       }, {
         headers: {
           'Idempotency-Key': idempotencyKey,
@@ -34,7 +47,14 @@ export default function Checkout() {
       setTimeout(() => {
         setPaymentResult(response.data);
         setStatus('success');
-      }, 1200); // Leggero ritardo per far godere l'animazione di caricamento
+        
+        // Auto-redirect if return_url is provided
+        if (return_url) {
+          setTimeout(() => {
+            window.location.href = return_url;
+          }, 4000);
+        }
+      }, 1200);
 
     } catch (error) {
       console.error("Errore durante il pagamento:", error);
@@ -78,12 +98,15 @@ export default function Checkout() {
             </div>
 
             <div className="flex flex-col gap-4 sm:flex-row">
-              <button onClick={() => setStatus('idle')} className="w-full flex justify-center py-3 px-4 border border-white/20 rounded-xl shadow-sm text-sm font-medium text-white bg-transparent hover:bg-white/5 transition-all">
-                Nuovo Ordine
-              </button>
-              <Link to="/dashboard" className="w-full flex justify-center py-3 px-4 border border-transparent rounded-xl shadow-[0_0_20px_rgba(59,130,246,0.3)] text-sm font-medium text-white bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 transition-all">
-                Dashboard
-              </Link>
+              {return_url ? (
+                <a href={return_url} className="w-full flex justify-center py-3 px-4 border border-transparent rounded-xl shadow-[0_0_20px_rgba(59,130,246,0.3)] text-sm font-medium text-white bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 transition-all">
+                  Torna al sito del venditore (Redirect tra 4s...)
+                </a>
+              ) : (
+                <Link to="/dashboard" className="w-full flex justify-center py-3 px-4 border border-transparent rounded-xl shadow-[0_0_20px_rgba(59,130,246,0.3)] text-sm font-medium text-white bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 transition-all">
+                  Dashboard
+                </Link>
+              )}
             </div>
           </div>
         </div>
@@ -126,25 +149,17 @@ export default function Checkout() {
                   </svg>
                 </div>
                 <div>
-                  <h4 className="text-base font-semibold text-white leading-tight">Concerto Sinfonico</h4>
-                  <p className="text-sm text-purple-300 mt-1">Colonne Sonore Studio Ghibli</p>
-                  <span className="inline-block mt-2 px-2 py-1 bg-white/10 text-xs rounded-md text-gray-300">Fila F • Posti 12, 13</span>
+                  <h4 className="text-base font-semibold text-white leading-tight">{event_name}</h4>
+                  <p className="text-sm text-purple-300 mt-1">{venue}</p>
+                  <span className="inline-block mt-2 px-2 py-1 bg-white/10 text-xs rounded-md text-gray-300">Posti: {seats}</span>
                 </div>
               </div>
             </div>
 
             <div className="border-t border-white/10 pt-6 space-y-4">
-              <div className="flex justify-between text-sm text-gray-400">
-                <span>Subtotale (2x Biglietti)</span>
-                <span className="text-white">€20.00</span>
-              </div>
-              <div className="flex justify-between text-sm text-gray-400">
-                <span>Tasse e prevendita</span>
-                <span className="text-white">€5.00</span>
-              </div>
               <div className="border-t border-white/10 pt-4 flex justify-between items-center">
                 <span className="text-lg font-medium text-gray-300">Totale</span>
-                <span className="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-400">€25.00</span>
+                <span className="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-400">€{amount_eur}</span>
               </div>
             </div>
           </div>
@@ -238,7 +253,7 @@ export default function Checkout() {
                       <span className="font-bold text-white tracking-wide">Elaborazione sicura...</span>
                     </>
                   ) : (
-                    <span className="font-bold text-white tracking-wide">Conferma Pagamento — €25.00</span>
+                    <span className="font-bold text-white tracking-wide">Conferma Pagamento — €{amount_eur}</span>
                   )}
                 </div>
               </button>
