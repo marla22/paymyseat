@@ -96,7 +96,7 @@ if __name__ == "__main__":
         elif scelta == '3':
             demo_idempotenza()
         elif scelta == '4':
-            print("Uscita dal tool. Buona fortuna per l'esame!")
+            print("Uscita dal tool.")
             break
         else:
             print("Scelta non valida.")
