@@ -47,6 +47,12 @@ def start_relay():
     print("[OutboxRelay] Avvio polling sulla tabella outbox_events...")
     while True:
         try:
+            if connection is None or connection.is_closed or channel is None or channel.is_closed:
+                print("[OutboxRelay] Riconnessione a RabbitMQ...")
+                connection = pika.BlockingConnection(pika.ConnectionParameters(host=RABBITMQ_HOST))
+                channel = connection.channel()
+                channel.exchange_declare(exchange='paymyseat_events', exchange_type='topic', durable=True)
+
             conn = get_db_connection()
             with conn.cursor() as cursor:
                 # Seleziona eventi in PENDING

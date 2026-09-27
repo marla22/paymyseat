@@ -81,8 +81,10 @@ def create_payment():
 
     payment_id = str(uuid.uuid4())
     
-    # FIX 4: Nome evento conforme (payment.succeeded / payment.failed)
-    event_type = "payment.succeeded"
+    # Simulazione della banca: se l'importo finisce con 13 fallisce
+    is_failure = str(amount_cents).endswith('13')
+    payment_status = 'FAILED' if is_failure else 'COMPLETED'
+    event_type = 'payment.failed' if is_failure else 'payment.succeeded'
 
     try:
         conn = get_db_connection()
@@ -91,7 +93,7 @@ def create_payment():
             cursor.execute("""
                 INSERT INTO payments (id, booking_id, amount_cents, status, idempotency_key, callback_url)
                 VALUES (%s, %s, %s, %s, %s, %s)
-            """, (payment_id, booking_id, amount_cents, 'COMPLETED', idempotency_key, callback_url))
+            """, (payment_id, booking_id, amount_cents, payment_status, idempotency_key, callback_url))
 
             # Transactional Outbox: inserimento dell'evento
             outbox_payload = {

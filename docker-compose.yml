@@ -128,6 +128,7 @@ services:
     ports:
       - "5002:5002"
     environment:
+      - PYTHONUNBUFFERED=1
       - RABBITMQ_HOST=rabbitmq
       - WEBHOOK_SECRET=${PAYMYSEAT_WEBHOOK_SECRET}
     depends_on:
