@@ -208,36 +208,36 @@ Richiede il rimborso asincrono di un pagamento completato. Restituisce HTTP `202
 
 ---
 
-## Infrastruttura Cloud
+## Infrastruttura Cloud (AWS)
 
-L'infrastruttura AWS è definita interamente come codice (IaC) e versionata nel repository.
+L'infrastruttura AWS è definita interamente come codice (IaC) e versionata nel repository. Segui questi passi per avviare il progetto sul cloud.
 
-### Terraform (`infra/cloud/terraform/`)
+### 1. Setup Iniziale (Solo la prima volta)
+Assicurati di aver creato il file `.env` nella cartella principale (verrà copiato automaticamente sul server):
+```bash
+echo "PAYMYSEAT_WEBHOOK_SECRET=paymyseat_shared_secret_key" > .env
+```
 
-Provisioning automatico di:
-- **VPC** con subnet pubblica e Internet Gateway
-- **Security Groups** con regole firewall per le porte dei servizi
-- **Istanza EC2** (`t3.micro`, free tier) con chiave SSH generata automaticamente
-- **Chiave RSA** (`tls_private_key`) salvata localmente per l'accesso passwordless
-
+### 2. Creazione Infrastruttura (Terraform)
+Effettua il provisioning di VPC, Security Group e dell'istanza EC2 (`t3.micro`):
 ```bash
 cd infra/cloud/terraform
 terraform init
-terraform plan
-terraform apply
+terraform apply -auto-approve
+```
+> **Nota sull'Indirizzo IP:** Poiché l'infrastruttura usa l'AWS Free Tier, l'IP pubblico cambia ad ogni avvio. Al termine del comando, Terraform stamperà l'IP assegnato. Se hai bisogno di recuperarlo in seguito, digita:
+```bash
+terraform output instance_public_ip
 ```
 
-### Ansible (`infra/cloud/ansible/`)
-
-Configurazione automatizzata dell'istanza EC2:
-- Installazione Docker Engine e Docker Compose
-- Aggiunta dell'utente al gruppo `docker`
-- Copia e avvio dello stack applicativo
-
+### 3. Configurazione e Avvio (Ansible)
+Una volta accesa l'istanza, usa Ansible per installare Docker, clonare il codice (incluso il `.env`) e avviare l'ecosistema:
 ```bash
-cd infra/cloud/ansible
+cd ../ansible
 ansible-playbook -i inventory playbook.yml
 ```
+
+L'intero sistema PayMySeat è ora online all'indirizzo IP pubblico generato al Passo 2.
 
 ---
 
