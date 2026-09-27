@@ -80,7 +80,7 @@ def start_rabbitmq_consumer():
             channel.exchange_declare(exchange='paymyseat_events', exchange_type='topic', durable=True)
             result = channel.queue_declare(queue='', exclusive=True)
             queue_name = result.method.queue
-            channel.queue_bind(exchange='paymyseat_events', queue=queue_name, routing_key='payment.succeeded')
+            channel.queue_bind(exchange='paymyseat_events', queue=queue_name, routing_key='payment.*')
             
             def callback(ch, method, properties, body):
                 try:
@@ -89,13 +89,6 @@ def start_rabbitmq_consumer():
                     if not callback_url:
                         ch.basic_ack(delivery_tag=method.delivery_tag)
                         return
-                    
-                    # Simulazione fallimento per importi che finiscono con 13
-                    amount_cents = payload.get("amount_cents", 0)
-                    if str(amount_cents).endswith('13'):
-                        payload["event_type"] = "payment.failed"
-                        payload["status"] = "FAILED"
-                        print(f"[Gateway] Importo terminante in 13. Simulazione fallimento.")
 
                     # Calcolo firma
                     payload_str = json.dumps(payload)
